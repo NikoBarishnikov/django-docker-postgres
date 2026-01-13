@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Список людей</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">MyDjangoApp</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link active" href="/">Главная</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/">Админка</a></li>
+                <li class="nav-item"><a class="nav-link" href="/api/persons/">API</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <h2 class="mb-4">Добавить человека</h2>
+    <form id="person-form" class="mb-5">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="first_name" placeholder="Имя" required>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="last_name" placeholder="Фамилия" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control" id="age" placeholder="Возраст" required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Добавить</button>
+            </div>
+        </div>
+    </form>
+
+    <h3>Список людей</h3>
+    <table class="table table-striped" id="person-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Имя</th>
+                <th>Фамилия</th>
+                <th>Возраст</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody id="person-body"></tbody>
+    </table>
+</div>
+
+<script>
+    async function fetchPersons() {
+        const res = await fetch("/api/persons/");
+        const data = await res.json();
+        const tbody = document.getElementById("person-body");
+        tbody.innerHTML = "";
+
+        data.forEach((person, index) => {
+            tbody.innerHTML += `
+                <tr data-id="${person.id}">
+                    <td>${index + 1}</td>
+                    <td class="first_name">${person.first_name}</td>
+                    <td class="last_name">${person.last_name}</td>
+                    <td class="age">${person.age}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning edit">✏️</button>
+                        <button class="btn btn-sm btn-danger delete">🗑</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        document.querySelectorAll(".delete").forEach(btn =>
+            btn.addEventListener("click", deletePerson));
+
+        document.querySelectorAll(".edit").forEach(btn =>
+            btn.addEventListener("click", editPerson));
+    }
+
+    async function deletePerson(event) {
+        const row = event.target.closest("tr");
+        const id = row.getAttribute("data-id");
+
+        if (!confirm("Удалить этого человека?")) return;
+
+        const res = await fetch(`/api/persons/${id}/`, {
+            method: "DELETE",
+        });
+
+        if (res.ok) {
+            row.remove();
+        } else {
+            alert("Ошибка удаления");
+        }
+    }
+
+    async function editPerson(event) {
+        const row = event.target.closest("tr");
+        const id = row.getAttribute("data-id");
+
+        const first_name = prompt("Имя:", row.querySelector(".first_name").textContent);
+        const last_name = prompt("Фамилия:", row.querySelector(".last_name").textContent);
+        const age = prompt("Возраст:", row.querySelector(".age").textContent);
+
+        const res = await fetch(`/api/persons/${id}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ first_name, last_name, age })
+        });
+
+        if (res.ok) {
+            fetchPersons();
+        } else {
+            alert("Ошибка при редактировании");
+        }
+    }
+
+    document.getElementById("person-form").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const first_name = document.getElementById("first_name").value;
+        const last_name = document.getElementById("last_name").value;
+        const age = document.getElementById("age").value;
+
+        const res = await fetch("/api/persons/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ first_name, last_name, age }),
+        });
+
+        if (res.ok) {
+            this.reset();
+            fetchPersons();
+        } else {
+            alert("Ошибка при добавлении!");
+        }
+    });
+
+    fetchPersons();
+</script>
+
+</body>
+</html>
