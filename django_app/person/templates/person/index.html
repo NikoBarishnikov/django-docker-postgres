@@ -24,13 +24,13 @@
     <form id="person-form" class="mb-5">
         <div class="row g-3">
             <div class="col-md-4">
-                <input type="text" class="form-control" id="first_name" placeholder="Имя" required>
+                <input type="text" class="form-control" id="name" placeholder="Имя" required>
             </div>
             <div class="col-md-4">
-                <input type="text" class="form-control" id="last_name" placeholder="Фамилия" required>
+                <input type="email" class="form-control" id="email" placeholder="Email" required>
             </div>
             <div class="col-md-2">
-                <input type="number" class="form-control" id="age" placeholder="Возраст" required>
+                <input type="date" class="form-control" id="birth_date" placeholder="Дата рождения">
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Добавить</button>
@@ -44,8 +44,8 @@
             <tr>
                 <th>#</th>
                 <th>Имя</th>
-                <th>Фамилия</th>
-                <th>Возраст</th>
+                <th>Email</th>
+                <th>Дата рождения</th>
                 <th>Действия</th>
             </tr>
         </thead>
@@ -54,7 +54,8 @@
 </div>
 
 <script>
-    async function fetchPersons() {
+async function fetchPersons() {
+    try {
         const res = await fetch("/api/persons/");
         const data = await res.json();
         const tbody = document.getElementById("person-body");
@@ -64,9 +65,9 @@
             tbody.innerHTML += `
                 <tr data-id="${person.id}">
                     <td>${index + 1}</td>
-                    <td class="first_name">${person.first_name}</td>
-                    <td class="last_name">${person.last_name}</td>
-                    <td class="age">${person.age}</td>
+                    <td class="name">${person.name}</td>
+                    <td class="email">${person.email}</td>
+                    <td class="birth_date">${person.birth_date || ""}</td>
                     <td>
                         <button class="btn btn-sm btn-warning edit">✏️</button>
                         <button class="btn btn-sm btn-danger delete">🗑</button>
@@ -80,58 +81,55 @@
 
         document.querySelectorAll(".edit").forEach(btn =>
             btn.addEventListener("click", editPerson));
+    } catch (err) {
+        console.error("Ошибка загрузки людей:", err);
     }
+}
 
-    async function deletePerson(event) {
-        const row = event.target.closest("tr");
-        const id = row.getAttribute("data-id");
+async function deletePerson(event) {
+    const row = event.target.closest("tr");
+    const id = row.getAttribute("data-id");
 
-        if (!confirm("Удалить этого человека?")) return;
+    if (!confirm("Удалить этого человека?")) return;
 
-        const res = await fetch(`/api/persons/${id}/`, {
-            method: "DELETE",
-        });
+    const res = await fetch(`/api/persons/${id}/`, { method: "DELETE" });
+    if (res.ok) row.remove();
+    else alert("Ошибка удаления");
+}
 
-        if (res.ok) {
-            row.remove();
-        } else {
-            alert("Ошибка удаления");
-        }
-    }
+async function editPerson(event) {
+    const row = event.target.closest("tr");
+    const id = row.getAttribute("data-id");
 
-    async function editPerson(event) {
-        const row = event.target.closest("tr");
-        const id = row.getAttribute("data-id");
+    const name = prompt("Имя:", row.querySelector(".name").textContent);
+    const email = prompt("Email:", row.querySelector(".email").textContent);
+    const birth_date = prompt("Дата рождения:", row.querySelector(".birth_date").textContent);
 
-        const first_name = prompt("Имя:", row.querySelector(".first_name").textContent);
-        const last_name = prompt("Фамилия:", row.querySelector(".last_name").textContent);
-        const age = prompt("Возраст:", row.querySelector(".age").textContent);
+    const res = await fetch(`/api/persons/${id}/`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, birth_date })
+    });
 
-        const res = await fetch(`/api/persons/${id}/`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ first_name, last_name, age })
-        });
+    if (res.ok) fetchPersons();
+    else alert("Ошибка при редактировании");
+}
 
-        if (res.ok) {
-            fetchPersons();
-        } else {
-            alert("Ошибка при редактировании");
-        }
-    }
+document.addEventListener("DOMContentLoaded", function() {
+    // Инициализация таблицы при загрузке
+    fetchPersons();
 
+    // Обработчик формы
     document.getElementById("person-form").addEventListener("submit", async function (e) {
         e.preventDefault();
-        const first_name = document.getElementById("first_name").value;
-        const last_name = document.getElementById("last_name").value;
-        const age = document.getElementById("age").value;
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const birth_date = document.getElementById("birth_date").value;
 
         const res = await fetch("/api/persons/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ first_name, last_name, age }),
+            body: JSON.stringify({ name, email, birth_date }),
         });
 
         if (res.ok) {
@@ -141,8 +139,7 @@
             alert("Ошибка при добавлении!");
         }
     });
-
-    fetchPersons();
+});
 </script>
 
 </body>
