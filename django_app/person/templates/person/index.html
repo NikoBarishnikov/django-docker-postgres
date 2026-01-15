@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Список людей</title>
+    <title>Personenliste</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -11,8 +11,8 @@
         <a class="navbar-brand" href="/">MyDjangoApp</a>
         <div class="collapse navbar-collapse">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link active" href="/">Главная</a></li>
-                <li class="nav-item"><a class="nav-link" href="/admin/">Админка</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/">Startseite</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/">Admin</a></li>
                 <li class="nav-item"><a class="nav-link" href="/api/persons/">API</a></li>
             </ul>
         </div>
@@ -20,66 +20,66 @@
 </nav>
 
 <div class="container">
-    <h2 class="mb-4">Добавить человека</h2>
+    <h2 class="mb-4">Person hinzufügen</h2>
     <form id="person-form" class="mb-5">
         <div class="row g-3">
             <div class="col-md-4">
-                <input type="text" class="form-control" id="name" placeholder="Имя" required>
+                <input type="text" class="form-control" id="name" placeholder="Vorname und Nachname" required>
             </div>
             <div class="col-md-4">
-                <input type="email" class="form-control" id="email" placeholder="Email" required>
+                <input type="email" class="form-control" id="email" placeholder="E-Mail-Adresse" required>
             </div>
             <div class="col-md-2">
-                <input type="date" class="form-control" id="birth_date" placeholder="Дата рождения">
+                <input type="date" class="form-control" id="birth_date" placeholder="TT.MM.JJJJ">
             </div>
             <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Добавить</button>
+                <button type="submit" class="btn btn-primary w-100">Hinzufügen</button>
             </div>
         </div>
     </form>
 
-    <h3>Список людей</h3>
+    <h3>Personenliste</h3>
     <table class="table table-striped" id="person-table">
         <thead>
             <tr>
                 <th>#</th>
-                <th>Имя</th>
-                <th>Email</th>
-                <th>Дата рождения</th>
-                <th>Действия</th>
+                <th>Name</th>
+                <th>E-Mail</th>
+                <th>Geburtsdatum</th>
+                <th>Aktionen</th>
             </tr>
         </thead>
         <tbody id="person-body"></tbody>
     </table>
 </div>
 
-<!-- Modal для редактирования -->
+<!-- Modal für Bearbeitung -->
 <div class="modal fade" id="editModal" data-cy="edit-modal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Редактировать человека</h5>
+        <h5 class="modal-title">Person bearbeiten</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="edit-person-form">
           <div class="mb-3">
-            <label for="edit-name" class="form-label">Имя</label>
-            <input type="text" class="form-control" id="edit-name" data-cy="edit-name" required>
+            <label for="edit-name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="edit-name" data-cy="edit-name" placeholder="Vorname und Nachname" required>
           </div>
           <div class="mb-3">
-            <label for="edit-email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="edit-email" data-cy="edit-email" required>
+            <label for="edit-email" class="form-label">E-Mail</label>
+            <input type="email" class="form-control" id="edit-email" data-cy="edit-email" placeholder="E-Mail-Adresse" required>
           </div>
           <div class="mb-3">
-            <label for="edit-birth-date" class="form-label">Дата рождения</label>
-            <input type="date" class="form-control" id="edit-birth-date" data-cy="edit-birth-date">
+            <label for="edit-birth-date" class="form-label">Geburtsdatum</label>
+            <input type="date" class="form-control" id="edit-birth-date" data-cy="edit-birth-date" placeholder="TT.MM.JJJJ">
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-        <button type="button" class="btn btn-primary" id="save-person" data-cy="save-person">Сохранить</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+        <button type="button" class="btn btn-primary" id="save-person" data-cy="save-person">Speichern</button>
       </div>
     </div>
   </div>
@@ -87,7 +87,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript">
-// --- CSRF функция ---
+// --- CSRF Funktion ---
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== "") {
@@ -104,10 +104,10 @@ function getCookie(name) {
 }
 const csrftoken = getCookie("csrftoken") || "";
 
-// --- Глобальная переменная для текущего редактируемого id ---
+// --- Globale Variable für aktuelle Bearbeitung ---
 let currentEditId = null;
 
-// --- Получение списка людей ---
+// --- Personenliste abrufen ---
 async function fetchPersons() {
     try {
         const res = await fetch("/api/persons/");
@@ -133,11 +133,11 @@ async function fetchPersons() {
         document.querySelectorAll(".delete").forEach(btn => btn.addEventListener("click", deletePerson));
         document.querySelectorAll(".edit").forEach(btn => btn.addEventListener("click", editPerson));
     } catch (err) {
-        console.error("Ошибка загрузки людей:", err);
+        console.error("Fehler beim Laden der Personen:", err);
     }
 }
 
-// --- Добавление человека ---
+// --- Person hinzufügen ---
 async function addPerson(name, email, birth_date) {
     try {
         const res = await fetch("/api/persons/", {
@@ -146,18 +146,18 @@ async function addPerson(name, email, birth_date) {
             body: JSON.stringify({ name, email, birth_date })
         });
         if (res.ok) fetchPersons();
-        else alert("Ошибка при добавлении!");
+        else alert("Fehler beim Hinzufügen!");
     } catch (err) {
-        console.error("Ошибка сети при добавлении:", err);
-        alert("Ошибка сети при добавлении!");
+        console.error("Netzwerkfehler beim Hinzufügen:", err);
+        alert("Netzwerkfehler beim Hinzufügen!");
     }
 }
 
-// --- Удаление человека ---
+// --- Person löschen ---
 async function deletePerson(event) {
     const row = event.target.closest("tr");
     const id = row.getAttribute("data-id");
-    if (!confirm("Удалить этого человека?")) return;
+    if (!confirm("Diese Person löschen?")) return;
 
     try {
         const res = await fetch(`/api/persons/${id}/`, {
@@ -165,14 +165,14 @@ async function deletePerson(event) {
             headers: { "X-CSRFToken": csrftoken }
         });
         if (res.ok) row.remove();
-        else alert("Ошибка удаления!");
+        else alert("Fehler beim Löschen!");
     } catch (err) {
-        console.error("Ошибка сети при удалении:", err);
-        alert("Ошибка сети при удалении!");
+        console.error("Netzwerkfehler beim Löschen:", err);
+        alert("Netzwerkfehler beim Löschen!");
     }
 }
 
-// --- Редактирование человека через modal ---
+// --- Person bearbeiten via Modal ---
 function editPerson(event) {
     const row = event.target.closest("tr");
     currentEditId = row.getAttribute("data-id");
@@ -187,7 +187,7 @@ function editPerson(event) {
     modal.show();
 }
 
-// --- Save навешивается один раз ---
+// --- Save Button ---
 document.getElementById("save-person").addEventListener("click", async () => {
     if (!currentEditId) return;
 
@@ -219,14 +219,14 @@ document.getElementById("save-person").addEventListener("click", async () => {
             emailCell.textContent = updatedEmail;
             birthCell.textContent = updatedBirth;
             bootstrap.Modal.getInstance(document.getElementById("editModal")).hide();
-        } else alert("Ошибка при редактировании!");
+        } else alert("Fehler beim Bearbeiten!");
     } catch (err) {
         console.error(err);
-        alert("Ошибка сети при редактировании!");
+        alert("Netzwerkfehler beim Bearbeiten!");
     }
 });
 
-// --- Инициализация страницы ---
+// --- Seite initialisieren ---
 document.addEventListener("DOMContentLoaded", () => {
     fetchPersons();
 
