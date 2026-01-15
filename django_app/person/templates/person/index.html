@@ -53,7 +53,40 @@
     </table>
 </div>
 
-<script>
+<!-- Modal для редактирования -->
+<div class="modal fade" id="editModal" data-cy="edit-modal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Редактировать человека</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-person-form">
+          <div class="mb-3">
+            <label for="edit-name" class="form-label">Имя</label>
+            <input type="text" class="form-control" id="edit-name" data-cy="edit-name" required>
+          </div>
+          <div class="mb-3">
+            <label for="edit-email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="edit-email" data-cy="edit-email" required>
+          </div>
+          <div class="mb-3">
+            <label for="edit-birth-date" class="form-label">Дата рождения</label>
+            <input type="date" class="form-control" id="edit-birth-date" data-cy="edit-birth-date">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="save-person" data-cy="save-person">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/javascript">
 // --- CSRF функция ---
 function getCookie(name) {
     let cookieValue = null;
@@ -69,8 +102,10 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-
 const csrftoken = getCookie("csrftoken") || "";
+
+// --- Глобальная переменная для текущего редактируемого id ---
+let currentEditId = null;
 
 // --- Получение списка людей ---
 async function fetchPersons() {
@@ -111,11 +146,7 @@ async function addPerson(name, email, birth_date) {
             body: JSON.stringify({ name, email, birth_date })
         });
         if (res.ok) fetchPersons();
-        else {
-            const text = await res.text();
-            console.error("Ошибка при добавлении:", text);
-            alert("Ошибка при добавлении!");
-        }
+        else alert("Ошибка при добавлении!");
     } catch (err) {
         console.error("Ошибка сети при добавлении:", err);
         alert("Ошибка сети при добавлении!");
@@ -141,28 +172,59 @@ async function deletePerson(event) {
     }
 }
 
-// --- Редактирование человека ---
-async function editPerson(event) {
+// --- Редактирование человека через modal ---
+function editPerson(event) {
     const row = event.target.closest("tr");
-    const id = row.getAttribute("data-id");
+    currentEditId = row.getAttribute("data-id");
 
-    const name = prompt("Имя:", row.querySelector(".name").textContent);
-    const email = prompt("Email:", row.querySelector(".email").textContent);
-    const birth_date = prompt("Дата рождения:", row.querySelector(".birth_date").textContent);
+    const modalEl = document.getElementById("editModal");
+    const modal = new bootstrap.Modal(modalEl);
+
+    document.getElementById("edit-name").value = row.querySelector(".name").textContent || "";
+    document.getElementById("edit-email").value = row.querySelector(".email").textContent || "";
+    document.getElementById("edit-birth-date").value = row.querySelector(".birth_date").textContent || "";
+
+    modal.show();
+}
+
+// --- Save навешивается один раз ---
+document.getElementById("save-person").addEventListener("click", async () => {
+    if (!currentEditId) return;
+
+    const row = document.querySelector(`tr[data-id="${currentEditId}"]`);
+    const nameCell = row.querySelector(".name");
+    const emailCell = row.querySelector(".email");
+    const birthCell = row.querySelector(".birth_date");
+
+    const updatedName = document.getElementById("edit-name").value;
+    const updatedEmail = document.getElementById("edit-email").value;
+    const updatedBirth = document.getElementById("edit-birth-date").value;
 
     try {
-        const res = await fetch(`/api/persons/${id}/`, {
+        const res = await fetch(`/api/persons/${currentEditId}/`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
-            body: JSON.stringify({ name, email, birth_date })
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken
+            },
+            body: JSON.stringify({
+                name: updatedName,
+                email: updatedEmail,
+                birth_date: updatedBirth
+            })
         });
-        if (res.ok) fetchPersons();
-        else alert("Ошибка при редактировании!");
+
+        if (res.ok) {
+            nameCell.textContent = updatedName;
+            emailCell.textContent = updatedEmail;
+            birthCell.textContent = updatedBirth;
+            bootstrap.Modal.getInstance(document.getElementById("editModal")).hide();
+        } else alert("Ошибка при редактировании!");
     } catch (err) {
-        console.error("Ошибка сети при редактировании:", err);
+        console.error(err);
         alert("Ошибка сети при редактировании!");
     }
-}
+});
 
 // --- Инициализация страницы ---
 document.addEventListener("DOMContentLoaded", () => {
