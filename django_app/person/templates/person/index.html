@@ -54,6 +54,25 @@
 </div>
 
 <script>
+// --- CSRF функция ---
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie("csrftoken") || "";
+
+// --- Получение списка людей ---
 async function fetchPersons() {
     try {
         const res = await fetch("/api/persons/");
@@ -76,27 +95,53 @@ async function fetchPersons() {
             `;
         });
 
-        document.querySelectorAll(".delete").forEach(btn =>
-            btn.addEventListener("click", deletePerson));
-
-        document.querySelectorAll(".edit").forEach(btn =>
-            btn.addEventListener("click", editPerson));
+        document.querySelectorAll(".delete").forEach(btn => btn.addEventListener("click", deletePerson));
+        document.querySelectorAll(".edit").forEach(btn => btn.addEventListener("click", editPerson));
     } catch (err) {
         console.error("Ошибка загрузки людей:", err);
     }
 }
 
+// --- Добавление человека ---
+async function addPerson(name, email, birth_date) {
+    try {
+        const res = await fetch("/api/persons/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
+            body: JSON.stringify({ name, email, birth_date })
+        });
+        if (res.ok) fetchPersons();
+        else {
+            const text = await res.text();
+            console.error("Ошибка при добавлении:", text);
+            alert("Ошибка при добавлении!");
+        }
+    } catch (err) {
+        console.error("Ошибка сети при добавлении:", err);
+        alert("Ошибка сети при добавлении!");
+    }
+}
+
+// --- Удаление человека ---
 async function deletePerson(event) {
     const row = event.target.closest("tr");
     const id = row.getAttribute("data-id");
-
     if (!confirm("Удалить этого человека?")) return;
 
-    const res = await fetch(`/api/persons/${id}/`, { method: "DELETE" });
-    if (res.ok) row.remove();
-    else alert("Ошибка удаления");
+    try {
+        const res = await fetch(`/api/persons/${id}/`, {
+            method: "DELETE",
+            headers: { "X-CSRFToken": csrftoken }
+        });
+        if (res.ok) row.remove();
+        else alert("Ошибка удаления!");
+    } catch (err) {
+        console.error("Ошибка сети при удалении:", err);
+        alert("Ошибка сети при удалении!");
+    }
 }
 
+// --- Редактирование человека ---
 async function editPerson(event) {
     const row = event.target.closest("tr");
     const id = row.getAttribute("data-id");
@@ -105,39 +150,33 @@ async function editPerson(event) {
     const email = prompt("Email:", row.querySelector(".email").textContent);
     const birth_date = prompt("Дата рождения:", row.querySelector(".birth_date").textContent);
 
-    const res = await fetch(`/api/persons/${id}/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, birth_date })
-    });
-
-    if (res.ok) fetchPersons();
-    else alert("Ошибка при редактировании");
+    try {
+        const res = await fetch(`/api/persons/${id}/`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
+            body: JSON.stringify({ name, email, birth_date })
+        });
+        if (res.ok) fetchPersons();
+        else alert("Ошибка при редактировании!");
+    } catch (err) {
+        console.error("Ошибка сети при редактировании:", err);
+        alert("Ошибка сети при редактировании!");
+    }
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    // Инициализация таблицы при загрузке
+// --- Инициализация страницы ---
+document.addEventListener("DOMContentLoaded", () => {
     fetchPersons();
 
-    // Обработчик формы
-    document.getElementById("person-form").addEventListener("submit", async function (e) {
+    const form = document.getElementById("person-form");
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const name = document.getElementById("name").value;
         const email = document.getElementById("email").value;
         const birth_date = document.getElementById("birth_date").value;
 
-        const res = await fetch("/api/persons/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, birth_date }),
-        });
-
-        if (res.ok) {
-            this.reset();
-            fetchPersons();
-        } else {
-            alert("Ошибка при добавлении!");
-        }
+        await addPerson(name, email, birth_date);
+        form.reset();
     });
 });
 </script>
